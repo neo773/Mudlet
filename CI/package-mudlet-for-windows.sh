@@ -221,6 +221,29 @@ cp -v -p -t . \
 
 echo ""
 
+# Create portable version
+echo "Creating portable ZIP package..."
+PORTABLE_ZIP_DIR="${GITHUB_WORKSPACE_UNIX_PATH}/portable-${MSYSTEM}-${BUILD_CONFIG}"
+if [ -d "${PORTABLE_ZIP_DIR}" ]; then
+  rm -rf "${PORTABLE_ZIP_DIR}"
+fi
+mkdir -p "${PORTABLE_ZIP_DIR}"
+
+# Copy all packaged files to portable directory
+cp -r "${PACKAGE_DIR}"/* "${PORTABLE_ZIP_DIR}/"
+
+# Create portable.txt file to enable portable mode
+echo "" > "${PORTABLE_ZIP_DIR}/portable.txt"
+
+# Create the portable ZIP archive
+cd "${GITHUB_WORKSPACE_UNIX_PATH}" || exit 1
+PORTABLE_ZIP_NAME="Mudlet-portable-${MSYSTEM,,}.zip"
+zip -r "${PORTABLE_ZIP_NAME}" "$(basename "${PORTABLE_ZIP_DIR}")"
+
+echo ""
+echo "Created portable ZIP: ${GITHUB_WORKSPACE_UNIX_PATH}/${PORTABLE_ZIP_NAME}"
+echo ""
+
 # For debugging purposes:
 # echo "The recursive contents of the Project build sub-directory $(/usr/bin/cygpath --windows "~/src/mudlet/package"):"
 # /usr/bin/ls -aRl

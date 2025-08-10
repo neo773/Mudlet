@@ -153,6 +153,15 @@ if [[ "${GITHUB_REPO_TAG}" == "false" ]] && [[ "${PublicTestBuild}" == false ]];
 
   # Move packaged files to the upload directory
   moveToUploadDir "${uploadFilename}" 0
+  
+  # Also move portable ZIP for snapshot
+  PORTABLE_ZIP_LOCAL="${GITHUB_WORKSPACE}/Mudlet-portable-${MSYSTEM,,}.zip"
+  PORTABLE_SNAPSHOT_FILENAME="Mudlet-${VERSION}${MUDLET_VERSION_BUILD}-${BUILD_COMMIT}-windows-${BUILD_BITNESS}-portable.zip"
+  if [ -f "${PORTABLE_ZIP_LOCAL}" ]; then
+    echo "=== Moving portable ZIP to upload directory for snapshot ==="
+    cp "${PORTABLE_ZIP_LOCAL}" "${PACKAGE_DIR}/${PORTABLE_SNAPSHOT_FILENAME}"
+    moveToUploadDir "${PORTABLE_SNAPSHOT_FILENAME}" 0
+  fi
 else
 
   # Check if it's a Public Test Build
@@ -322,6 +331,16 @@ else
 
     # Installer named ${uploadFilename} should exist in ${PACKAGE_DIR} now, we're ok to proceed
     moveToUploadDir "${uploadFilename}" 1
+    
+    # Also move portable ZIP for PTB
+    PORTABLE_ZIP_LOCAL="${GITHUB_WORKSPACE}/Mudlet-portable-${MSYSTEM,,}.zip"
+    PORTABLE_PTB_FILENAME="Mudlet-${VERSION}${MUDLET_VERSION_BUILD}-${BUILD_COMMIT}-windows-${BUILD_BITNESS}-portable.zip"
+    if [ -f "${PORTABLE_ZIP_LOCAL}" ]; then
+      echo "=== Moving portable ZIP to upload directory for PTB ==="
+      cp "${PORTABLE_ZIP_LOCAL}" "${PACKAGE_DIR}/${PORTABLE_PTB_FILENAME}"
+      moveToUploadDir "${PORTABLE_PTB_FILENAME}" 0
+    fi
+    
     RELEASE_TAG="public-test-build"
     CHANGELOG_MODE="ptb"
   else
@@ -349,6 +368,32 @@ EOF
       exit 1
     fi
 
+    echo "=== Uploading portable ZIP to https://www.mudlet.org/wp-content/files/?C=M;O=D ==="
+    echo "${DEPLOY_SSH_KEY}" > temp_key_file2
+
+    # chown doesn't work in msys2 and scp requires the not be globally readable
+    # use a powershell workaround to set the permissions correctly
+    echo "Fixing permissions of private key file"
+    powershell.exe -Command "icacls.exe temp_key_file2 /inheritance:r"
+
+    PORTABLE_ZIP_LOCAL="${GITHUB_WORKSPACE}/Mudlet-portable-${MSYSTEM,,}.zip"
+    PORTABLE_ZIP_REMOTE="Mudlet-${VERSION}-windows-${BUILD_BITNESS}-portable.zip"
+
+    powershell.exe <<EOF
+\$portableZipPath = "${PORTABLE_ZIP_LOCAL}"
+\$DEPLOY_PATH = "${DEPLOY_PATH}"
+scp.exe -i temp_key_file2 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \$portableZipPath mudmachine@mudlet.org:\${DEPLOY_PATH}/${PORTABLE_ZIP_REMOTE}
+EOF
+
+    shred -u temp_key_file2
+
+    PORTABLE_DEPLOY_URL="https://www.mudlet.org/wp-content/files/${PORTABLE_ZIP_REMOTE}"
+
+    if ! curl --output /dev/null --silent --head --fail "${PORTABLE_DEPLOY_URL}"; then
+      echo "Error: portable ZIP not found as expected at ${PORTABLE_DEPLOY_URL}"
+      exit 1
+    fi
+
     SHA256SUM=$(shasum -a 256 "${installerExePath}" | awk '{print $1}')
 
     current_timestamp=$(date "+%-d %-m %Y %-H %-M %-S")
@@ -371,6 +416,28 @@ EOF
     -F "file_remote=${DEPLOY_URL}" \
     -F "file_name=Mudlet ${VERSION} (windows-${BUILD_BITNESS})" \
     -F "file_des=sha256: ${SHA256SUM}" \
+    -F "file_cat=${FILE_CATEGORY}" \
+    -F "file_permission=-1" \
+    -F "file_timestamp_day=${day}" \
+    -F "file_timestamp_month=${month}" \
+    -F "file_timestamp_year=${year}" \
+    -F "file_timestamp_hour=${hour}" \
+    -F "file_timestamp_minute=${minute}" \
+    -F "file_timestamp_second=${second}" \
+    -F "output=json" \
+    -F "do=Add File"
+
+    echo ""
+    echo "=== Registering portable ZIP with WP-Download-Manager ==="
+    PORTABLE_SHA256SUM=$(shasum -a 256 "${PORTABLE_ZIP_LOCAL}" | awk '{print $1}')
+    echo "sha256 of portable ZIP: ${PORTABLE_SHA256SUM}"
+
+    curl --retry 5 -X POST 'https://www.mudlet.org/download-add.php' \
+    -H "x-wp-download-token: ${X_WP_DOWNLOAD_TOKEN}" \
+    -F "file_type=2" \
+    -F "file_remote=${PORTABLE_DEPLOY_URL}" \
+    -F "file_name=Mudlet ${VERSION} Portable (windows-${BUILD_BITNESS})" \
+    -F "file_des=Portable version - no installation required. sha256: ${PORTABLE_SHA256SUM}" \
     -F "file_cat=${FILE_CATEGORY}" \
     -F "file_permission=-1" \
     -F "file_timestamp_day=${day}" \
