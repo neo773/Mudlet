@@ -361,29 +361,29 @@ EOF
 
     echo ""
     echo "=== Updating WP-Download-Manager ==="
-    echo "sha256 of installer: ${SHA256SUM}"
+    echo "sha256 of installer: ${SHA256SUM} DEPLOY_URL: ${DEPLOY_URL}"
 
     FILE_CATEGORY="2"
 
     current_timestamp=$(date "+%-d %-m %Y %-H %-M %-S")
     read -r day month year hour minute second <<< "${current_timestamp}"
 
-    curl --retry 5 -X POST 'https://www.mudlet.org/download-add.php' \
-    -H "x-wp-download-token: ${X_WP_DOWNLOAD_TOKEN}" \
-    -F "file_type=2" \
-    -F "file_remote=${DEPLOY_URL}" \
-    -F "file_name=Mudlet ${VERSION} (windows-${BUILD_BITNESS})" \
-    -F "file_des=sha256: ${SHA256SUM}" \
-    -F "file_cat=${FILE_CATEGORY}" \
-    -F "file_permission=-1" \
-    -F "file_timestamp_day=${day}" \
-    -F "file_timestamp_month=${month}" \
-    -F "file_timestamp_year=${year}" \
-    -F "file_timestamp_hour=${hour}" \
-    -F "file_timestamp_minute=${minute}" \
-    -F "file_timestamp_second=${second}" \
-    -F "output=json" \
-    -F "do=Add File"
+    # curl --retry 5 -X POST 'https://www.mudlet.org/download-add.php' \
+    # -H "x-wp-download-token: ${X_WP_DOWNLOAD_TOKEN}" \
+    # -F "file_type=2" \
+    # -F "file_remote=${DEPLOY_URL}" \
+    # -F "file_name=Mudlet ${VERSION} (windows-${BUILD_BITNESS})" \
+    # -F "file_des=sha256: ${SHA256SUM}" \
+    # -F "file_cat=${FILE_CATEGORY}" \
+    # -F "file_permission=-1" \
+    # -F "file_timestamp_day=${day}" \
+    # -F "file_timestamp_month=${month}" \
+    # -F "file_timestamp_year=${year}" \
+    # -F "file_timestamp_hour=${hour}" \
+    # -F "file_timestamp_minute=${minute}" \
+    # -F "file_timestamp_second=${second}" \
+    # -F "output=json" \
+    # -F "do=Add File"
     
     RELEASE_TAG="release"
     CHANGELOG_MODE="release"
