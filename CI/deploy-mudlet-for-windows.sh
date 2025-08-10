@@ -108,7 +108,6 @@ else
 fi
 
 # Check if we're building from the Mudlet/Mudlet repository and not a fork
-# Temporarily disabled for testing
 # if [[ "${GITHUB_REPO_NAME}" != "Mudlet/Mudlet" ]]; then
 #   exit 2
 # fi
