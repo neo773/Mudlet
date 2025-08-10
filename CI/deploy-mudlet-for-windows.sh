@@ -86,6 +86,9 @@ fi
 export MUDLET_VERSION_BUILD="${MUDLET_VERSION_BUILD,,}"
 export BUILD_COMMIT="${BUILD_COMMIT,,}"
 
+# Use system-installed qtkeychain for consistency with build script
+export WITH_OWN_QTKEYCHAIN="NO"
+
 # Extract version from the mudlet.pro file
 VersionLine=$(grep "VERSION =" "${GITHUB_WORKSPACE}/src/mudlet.pro")
 VersionRegex='= {1}(.+)$'
